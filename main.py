@@ -1,5 +1,10 @@
+from flask import Flask
 import gspread
 from google.oauth2.service_account import Credentials
+import os
+import json
+
+app = Flask(__name__)
 
 # Scope akses
 scope = [
@@ -7,22 +12,19 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# Load credentials
-creds = Credentials.from_service_account_file(
-    "wfm-auto.json",
-    scopes=scope
-)
+# Ambil credentials dari environment variable
+creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS"])
+creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
 
-# Authorize
 client = gspread.authorize(creds)
-
-# Buka pakai Spreadsheet ID (LEBIH AMAN)
 spreadsheet = client.open_by_key("17SL1HE0YSyJCcq68znfPOFewUp1ctrHckBKUfHqEdh4")
-
-# Ambil sheet pertama
 sheet = spreadsheet.sheet1
 
-# Print semua data
-data = sheet.get_all_records()
+@app.route("/")
+def home():
+    data = sheet.get_all_records()
+    return {"data": data}
 
-print(data)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
